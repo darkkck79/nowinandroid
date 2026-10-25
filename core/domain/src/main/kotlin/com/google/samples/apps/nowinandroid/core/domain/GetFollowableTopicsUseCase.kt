@@ -18,6 +18,7 @@ package com.google.samples.apps.nowinandroid.core.domain
 
 import com.google.samples.apps.nowinandroid.core.data.repository.TopicsRepository
 import com.google.samples.apps.nowinandroid.core.data.repository.UserDataRepository
+import com.google.samples.apps.nowinandroid.core.domain.TopicSortField.FOLLOWED
 import com.google.samples.apps.nowinandroid.core.domain.TopicSortField.NAME
 import com.google.samples.apps.nowinandroid.core.domain.TopicSortField.NONE
 import com.google.samples.apps.nowinandroid.core.model.data.FollowableTopic
@@ -36,6 +37,7 @@ class GetFollowableTopicsUseCase @Inject constructor(
      * Returns a list of topics with their associated followed state.
      *
      * @param sortBy - the field used to sort the topics. Default NONE = no sorting.
+     * FOLLOWED = followed topics first, each group sorted by name ignoring case.
      */
     operator fun invoke(sortBy: TopicSortField = NONE): Flow<List<FollowableTopic>> = combine(
         userDataRepository.userData,
@@ -50,6 +52,10 @@ class GetFollowableTopicsUseCase @Inject constructor(
             }
         when (sortBy) {
             NAME -> followedTopics.sortedBy { it.topic.name }
+            FOLLOWED -> followedTopics.sortedWith(
+                compareByDescending<FollowableTopic> { it.isFollowed }
+                    .thenBy(String.CASE_INSENSITIVE_ORDER) { it.topic.name },
+            )
             else -> followedTopics
         }
     }
@@ -58,4 +64,5 @@ class GetFollowableTopicsUseCase @Inject constructor(
 enum class TopicSortField {
     NONE,
     NAME,
+    FOLLOWED,
 }
