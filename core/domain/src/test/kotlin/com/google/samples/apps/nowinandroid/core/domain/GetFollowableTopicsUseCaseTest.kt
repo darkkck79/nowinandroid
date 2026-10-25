@@ -16,6 +16,7 @@
 
 package com.google.samples.apps.nowinandroid.core.domain
 
+import com.google.samples.apps.nowinandroid.core.domain.TopicSortField.FOLLOWED
 import com.google.samples.apps.nowinandroid.core.domain.TopicSortField.NAME
 import com.google.samples.apps.nowinandroid.core.model.data.FollowableTopic
 import com.google.samples.apps.nowinandroid.core.model.data.Topic
@@ -82,10 +83,59 @@ class GetFollowableTopicsUseCaseTest {
                 },
         )
     }
+
+    @Test
+    fun whenSortOrderIsByFollowed_followedTopicsFirstThenEachGroupSortedByNameCaseInsensitively() = runTest {
+        val followableTopics = useCase(sortBy = FOLLOWED)
+
+        topicsRepository.sendTopics(mixedCaseTopics)
+        userDataRepository.setFollowedTopicIds(setOf("1", "4", "6"))
+
+        assertEquals(
+            listOf(
+                FollowableTopic(mixedCaseTopics[5], true),
+                FollowableTopic(mixedCaseTopics[0], true),
+                FollowableTopic(mixedCaseTopics[3], true),
+                FollowableTopic(mixedCaseTopics[4], false),
+                FollowableTopic(mixedCaseTopics[1], false),
+                FollowableTopic(mixedCaseTopics[2], false),
+            ),
+            followableTopics.first(),
+        )
+    }
+
+    @Test
+    fun whenSortOrderIsByFollowed_andNoTopicsFollowed_topicsSortedByNameCaseInsensitively() = runTest {
+        val followableTopics = useCase(sortBy = FOLLOWED)
+
+        topicsRepository.sendTopics(mixedCaseTopics)
+        userDataRepository.setFollowedTopicIds(setOf())
+
+        assertEquals(
+            listOf(
+                FollowableTopic(mixedCaseTopics[4], false),
+                FollowableTopic(mixedCaseTopics[1], false),
+                FollowableTopic(mixedCaseTopics[5], false),
+                FollowableTopic(mixedCaseTopics[0], false),
+                FollowableTopic(mixedCaseTopics[2], false),
+                FollowableTopic(mixedCaseTopics[3], false),
+            ),
+            followableTopics.first(),
+        )
+    }
 }
 
 private val testTopics = listOf(
     Topic("1", "Headlines", "", "", "", ""),
     Topic("2", "Android Studio", "", "", "", ""),
     Topic("3", "Compose", "", "", "", ""),
+)
+
+private val mixedCaseTopics = listOf(
+    Topic("1", "compose", "", "", "", ""),
+    Topic("2", "Android Studio", "", "", "", ""),
+    Topic("3", "headlines", "", "", "", ""),
+    Topic("4", "Kotlin", "", "", "", ""),
+    Topic("5", "accessibility", "", "", "", ""),
+    Topic("6", "Benchmarks", "", "", "", ""),
 )
